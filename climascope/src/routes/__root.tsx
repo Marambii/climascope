@@ -12,8 +12,12 @@ export const Route = createRootRoute({
           <Link to="/" className="font-semibold hover:text-emerald-300 [&.active]:text-emerald-400">
             Dashboard
           </Link>
-          <div className="text-slate-500 cursor-not-allowed">Environmental Map</div>
-          <div className="text-slate-500 cursor-not-allowed">Alerts</div>
+          <Link to="/map" className="font-semibold text-slate-400 hover:text-emerald-300 [&.active]:text-emerald-400 [&.active]:font-bold">
+            Environmental Map
+          </Link>
+          <Link to="/alerts" className="font-semibold text-slate-400 hover:text-emerald-300 [&.active]:text-emerald-400 [&.active]:font-bold">
+            Alerts
+          </Link>
         </nav>
       </aside>
 

@@ -16,8 +16,8 @@ export interface HistoricalMetric {
   press_bme: number;
   humidity_sht: number;
   wind_spd: number;
+ 
 }
-
 export interface ClimascopeResponse {
   location_id: number;
   station_name: string;

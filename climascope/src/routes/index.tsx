@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import dummyData from '../data/dummyData.json';
+import { MetricCharts } from '../components/MetricCharts'; 
 
 export const Route = createFileRoute('/')({
   component: Dashboard,
@@ -82,9 +83,8 @@ function Dashboard() {
       </section>
       
       {/* Placeholder for ECharts */}
-      <section className="bg-white p-6 rounded-xl border border-slate-200 h-64 flex items-center justify-center">
-        <p className="text-slate-400">[ ECharts Component goes here ]</p>
-      </section>
+        <MetricCharts/>
+    
     </div>
   );
 }
