@@ -11,6 +11,8 @@ export interface Anomaly {
 export interface HistoricalMetric {
   ts: string;
   temp_bme: number;
+  temp_mcp: number;
+  wet_bulb_temp: number;
   press_bme: number;
   humidity_sht: number;
   wind_spd: number;
