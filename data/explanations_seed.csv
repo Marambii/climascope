@@ -1,0 +1,4 @@
+prompt,completion
+"Location JKUAT: 30-day rainfall z=-2.1, humidity trend=-0.8, temp z=+1.3, dry spell=18 days",WARNING: Low rainfall and declining soil moisture with above-average temperatures. Recommend inspecting water availability.
+"Location JKUAT: 30-day rainfall z=-0.4, humidity trend=-0.1, temp z=+0.2, dry spell=3 days",NORMAL: Conditions within the seasonal fingerprint. Continue routine monitoring.
+"Location JKUAT: 30-day rainfall z=-1.2, humidity trend=-0.5, temp z=+0.8, dry spell=9 days",WATCH: Rainfall below seasonal baseline with a developing dry spell. Monitor daily and verify rain gauges.

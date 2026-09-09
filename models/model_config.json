@@ -1,0 +1,40 @@
+{
+  "features": [
+    "rain_7d",
+    "rain_30d",
+    "humidity_7d",
+    "humidity_min_7d",
+    "tempmax_7d",
+    "light_7d",
+    "humidity_trend",
+    "temp_trend",
+    "dry_spell",
+    "temp_mean_z",
+    "humidity_mean_z",
+    "rain_mm_z",
+    "rain_deficit_30d"
+  ],
+  "severity_thresholds": [
+    [
+      0.8,
+      "CRITICAL"
+    ],
+    [
+      0.6,
+      "HIGH"
+    ],
+    [
+      0.35,
+      "WATCH"
+    ],
+    [
+      0.0,
+      "NORMAL"
+    ]
+  ],
+  "anomaly_thresholds": {
+    "watch": 0.5263153550009392,
+    "warning": 0.5640890684974034,
+    "critical": 0.6063077113022178
+  }
+}
