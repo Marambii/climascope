@@ -1,0 +1,67 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from .models import Location, SensorMeasurement, RiskPrediction, Anomaly, Alert, RecommendedAction
+from .serializers import LocationSerializer, SensorMeasurementSerializer, AlertSerializer
+
+class LocationListView(APIView):
+    """GET /api/locations - List all monitored stations."""
+    def get(self, request):
+        locations = Location.objects.all()
+        serializer = LocationSerializer(locations, many=True)
+        return Response(serializer.data)
+
+class LocationDetailView(APIView):
+    """GET /api/locations/{id} - Retrieve detailed information for a station."""
+    def get(self, request, loc_id):
+        location = get_object_or_404(Location, pk=loc_id)
+        serializer = LocationSerializer(location)
+        return Response(serializer.data)
+
+class LocationMeasurementsView(APIView):
+    """GET /api/locations/{id}/measurements - Fetch recent telemetry."""
+    def get(self, request, loc_id):
+        location = get_object_or_404(Location, pk=loc_id)
+        measurements = SensorMeasurement.objects.filter(location=location)[:50]
+        serializer = SensorMeasurementSerializer(measurements, many=True)
+        return Response(serializer.data)
+
+class LocationRiskView(APIView):
+    """GET /api/locations/{id}/risk - Output adhering strictly to Shared Data Contract."""
+    def get(self, request, loc_id):
+        location = get_object_or_404(Location, pk=loc_id)
+        pred = RiskPrediction.objects.filter(location=location).order_by('-timestamp').first()
+        
+        if not pred:
+            return Response({"error": "No prediction available for this location."}, status=status.HTTP_404_NOT_FOUND)
+            
+        anomalies = Anomaly.objects.filter(location=location, timestamp=pred.timestamp)
+        action = RecommendedAction.objects.filter(prediction=pred).first()
+        
+        # Shared Data Contract JSON output format (Section 7)
+        payload = {
+            "location_id": location.id,
+            "risk_type": pred.risk_type,
+            "risk_probability": pred.risk_probability,
+            "severity": pred.severity,
+            "forecast_window_days": pred.forecast_window_days,
+            "confidence": pred.confidence,
+            "anomalies": [
+                {
+                    "variable": a.variable,
+                    "description": a.description,
+                    "severity": a.severity
+                } for a in anomalies
+            ],
+            "drivers": pred.drivers,
+            "recommended_action": action.action_text if action else "No immediate action required"
+        }
+        return Response(payload)
+
+class AlertListView(APIView):
+    """GET /api/alerts - List all unread system alerts for Baruch's UI."""
+    def get(self, request):
+        alerts = Alert.objects.filter(is_read=False).order_by('-timestamp')
+        serializer = AlertSerializer(alerts, many=True)
+        return Response(serializer.data)
