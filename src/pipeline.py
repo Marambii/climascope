@@ -1,12 +1,30 @@
 """End-to-end ClimaScope ML pipeline for integration.
 Loads ALL Conduit CSVs in data/ -> produces the shared JSON contract.
-Usage:  python src/pipeline.py
+Usage:  python -m src.pipeline
 """
-import os, sys, json, joblib
-import pandas as pd, numpy as np
+import json
+import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from config import RAW_CSV_GLOB, MODEL_DIR, OUTPUT_DIR, DROP_COLS, CLIP_RANGES, LOCATION_ID, SEVERITY
+import joblib
+import numpy as np
+import pandas as pd
+
+SRC_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SRC_DIR.parent
+OUTPUTS_DIR = PROJECT_ROOT / 'outputs'
+FINGERPRINT_PATH = OUTPUTS_DIR / 'fingerprint.csv'
+
+sys.path.insert(0, str(SRC_DIR))
+from config import (
+    CLIP_RANGES,
+    DOY_WINDOW,
+    DROP_COLS,
+    LOCATION_ID,
+    MODEL_DIR,
+    RAW_CSV_GLOB,
+    SEVERITY,
+)
 from loader import load_all_data
 
 FEATURE_COLS = json.load(open(f'{MODEL_DIR}/model_config.json'))['features']
@@ -31,7 +49,70 @@ def load_clean_daily(glob=RAW_CSV_GLOB):
     d.index.name = 'date'
     return d
 
-def build_features(d, fp_csv=f'{OUTPUT_DIR}/fingerprint.csv'):
+def build_fingerprint_baseline(d: pd.DataFrame) -> pd.DataFrame:
+    """Create the seasonal baseline required for the model's Z-score features."""
+    variables = [
+        'temp_max',
+        'temp_mean',
+        'humidity_mean',
+        'humidity_min',
+        'rain_mm',
+        'light_mean',
+    ]
+    use_day_of_year = (d.index.max() - d.index.min()).days >= 180
+
+    if use_day_of_year:
+        day_of_year = d.index.dayofyear.to_numpy()
+        rows = []
+        for period in np.unique(day_of_year):
+            distance = np.abs(day_of_year - period)
+            distance = np.minimum(distance, 366 - distance)
+            period_data = d.loc[distance <= DOY_WINDOW, variables]
+            row = {'period': period}
+            for variable in variables:
+                row[f'{variable}_mean'] = period_data[variable].mean()
+                row[f'{variable}_std'] = period_data[variable].std()
+            rows.append(row)
+        fingerprint = pd.DataFrame(rows)
+    else:
+        grouped = d.groupby(d.index.month)[variables].agg(['mean', 'std'])
+        fingerprint = grouped.reset_index()
+        fingerprint.columns = [f'{name}_{stat}' for name, stat in fingerprint.columns]
+        fingerprint = fingerprint.rename(columns={fingerprint.columns[0]: 'period'})
+
+    for variable in variables:
+        fingerprint[f'{variable}_mean'] = fingerprint[f'{variable}_mean'].fillna(
+            d[variable].mean()
+        )
+        fingerprint[f'{variable}_std'] = (
+            fingerprint[f'{variable}_std']
+            .replace(0, np.nan)
+            .fillna(d[variable].std())
+        )
+
+    return fingerprint
+
+
+def load_fingerprint_baseline(
+    d: pd.DataFrame,
+    fp_csv: str | Path = FINGERPRINT_PATH,
+) -> pd.DataFrame:
+    """Load a saved fingerprint or build and persist one when it is missing."""
+    fingerprint_path = Path(fp_csv)
+    fingerprint_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if fingerprint_path.is_file():
+        return pd.read_csv(fingerprint_path)
+
+    fingerprint = build_fingerprint_baseline(d)
+    fingerprint.to_csv(fingerprint_path, index=False)
+    return fingerprint
+
+
+def build_features(
+    d: pd.DataFrame,
+    fp_csv: str | Path = FINGERPRINT_PATH,
+) -> pd.DataFrame:
     f = d.copy()
     # min_periods matches notebooks/02_clean_fingerprint_features.ipynb -- must stay identical
     # or this pipeline will compute a different feature table than the one the model was trained on.
@@ -45,7 +126,7 @@ def build_features(d, fp_csv=f'{OUTPUT_DIR}/fingerprint.csv'):
     f['temp_trend'] = f['tempmax_7d'] - f['temp_max'].shift(7).rolling(7, min_periods=4).max()
     rain_days = f['rain_mm'] >= 1.0
     f['dry_spell'] = rain_days.groupby((~rain_days).cumsum()).cumsum()
-    fp = pd.read_csv(fp_csv)
+    fp = load_fingerprint_baseline(d, fp_csv)
     key = 'doy' if 'doy' in fp.columns else 'period'
     f['period'] = f.index.dayofyear if key == 'doy' else f.index.month
     f = f.merge(fp, left_on='period', right_on=key, how='left')
