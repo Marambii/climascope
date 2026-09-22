@@ -1,0 +1,16 @@
+pandas>=2.0
+numpy>=1.24
+scikit-learn>=1.3
+matplotlib>=3.7
+seaborn>=0.12
+jupyter
+joblib>=1.3
+shap>=0.45
+xgboost>=2.0
+fg-data-profiling>=4.6  
+setuptools<82  
+# --- OPTIONAL, install separately ONLY if needed ---
+# pycaret>=3.3     # AutoML; requires Python <=3.11, SKIP on 3.12/3.13
+earthengine-api  # only for scripts/satellite_gee.py
+python-dotenv    # only for scripts/satellite_gee.py and scripts/adaptionlabs_quickstart.py
+adaption         # only for scripts/adaptionlabs_quickstart.py
