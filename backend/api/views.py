@@ -1,9 +1,20 @@
+import logging
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from .models import Location, SensorMeasurement, RiskPrediction, Anomaly, Alert, RecommendedAction
-from .serializers import LocationSerializer, SensorMeasurementSerializer, AlertSerializer
+from .serializers import (
+    AlertSerializer,
+    LocationSerializer,
+    RiskPredictionSerializer,
+    SensorMeasurementSerializer,
+)
+
+
+logger = logging.getLogger(__name__)
 
 class LocationListView(APIView):
     """GET /api/locations - List all monitored stations."""
@@ -65,3 +76,30 @@ class AlertListView(APIView):
         alerts = Alert.objects.filter(is_read=False).order_by('-timestamp')
         serializer = AlertSerializer(alerts, many=True)
         return Response(serializer.data)
+
+
+@api_view(["GET"])
+def get_latest_location_risk(request, location_id):
+    """Return the newest persisted risk prediction for one location."""
+    try:
+        prediction = (
+            RiskPrediction.objects.filter(location_id=location_id)
+            .order_by("-timestamp")
+            .first()
+        )
+        if prediction is None:
+            return Response(
+                {"detail": "No risk prediction is available for this location."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(RiskPredictionSerializer(prediction).data)
+    except Exception:
+        logger.exception(
+            "Unable to retrieve the latest risk prediction for location_id=%s.",
+            location_id,
+        )
+        return Response(
+            {"detail": "Unable to retrieve the latest risk prediction."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
