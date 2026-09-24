@@ -9,7 +9,13 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from api.models import Location, SensorMeasurement
+from api.models import (
+    Anomaly,
+    Location,
+    RecommendedAction,
+    RiskPrediction,
+    SensorMeasurement,
+)
 
 
 class Command(BaseCommand):
@@ -91,9 +97,50 @@ class Command(BaseCommand):
             )
 
         SensorMeasurement.objects.bulk_create(measurements)
+        self._create_default_risk_prediction(location)
         self.stdout.write(
             self.style.SUCCESS(
                 f"Deleted {deleted_count} existing telemetry records and seeded "
                 f"{len(measurements)} readings for Location ID {location_id}."
+            )
+        )
+
+    def _create_default_risk_prediction(self, location: Location) -> None:
+        """Create development risk data only when ML output is not yet available."""
+        if RiskPrediction.objects.filter(location=location).exists():
+            return
+
+        timestamp = timezone.now()
+        prediction = RiskPrediction.objects.create(
+            location=location,
+            timestamp=timestamp,
+            risk_type="drought",
+            risk_probability=0.68,
+            severity="WARNING",
+            forecast_window_days=21,
+            confidence=0.82,
+            drivers=[
+                "Low rainfall over the last seven days",
+                "Declining soil-moisture levels",
+                "Above-average daytime temperature",
+            ],
+        )
+        RecommendedAction.objects.create(
+            prediction=prediction,
+            action_text=(
+                "Inspect water availability and irrigation systems; schedule a "
+                "field visit within 48 hours."
+            ),
+        )
+        Anomaly.objects.create(
+            location=location,
+            timestamp=timestamp,
+            variable="rainfall",
+            description="Rainfall is below the expected seasonal baseline.",
+            severity="HIGH",
+        )
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Created default risk prediction for Location ID {location.pk}."
             )
         )
