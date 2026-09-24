@@ -41,3 +41,15 @@ Thumbs.db
 *.log
 
 CODE_EXPLAINED.md
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Python compiled cache
+__pycache__/
+*.pyc
+
+# Environment & Node
+.venv/
+node_modules/
