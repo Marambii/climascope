@@ -14,7 +14,16 @@ import type {
   TelemetryReading,
 } from "../types/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const legacyApiBaseUrl = (
+  globalThis as typeof globalThis & {
+    process?: { env?: Record<string, string | undefined> };
+  }
+).process?.env?.REACT_APP_API_BASE_URL;
+const BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL
+  || legacyApiBaseUrl
+  || "https://climascope-api.onrender.com"
+).replace(/\/$/, "");
 const DEFAULT_LOCATION_ID = 1;
 
 interface ClimaScopeDataContextValue {
@@ -27,7 +36,7 @@ interface ClimaScopeDataContextValue {
 const ClimaScopeDataContext = createContext<ClimaScopeDataContextValue | null>(null);
 
 async function fetchJson<T>(path: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, { signal });
+  const response = await fetch(`${BASE_URL}${path}`, { signal });
 
   if (!response.ok) {
     throw new Error(`Request to ${path} failed with status ${response.status}.`);
