@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-climascope-backend-hackathon-secret-key'
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ['true', '1']
 
 ALLOWED_HOSTS = ['*']
 
@@ -81,3 +81,4 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "https://climascope.vercel.app",
 ]
+CORS_ALLOW_ALL_ORIGINS = True
