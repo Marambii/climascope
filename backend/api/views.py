@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.request import Request
 from django.shortcuts import get_object_or_404
 from .models import Location, SensorMeasurement, RiskPrediction, Anomaly, Alert, RecommendedAction
 from .serializers import (
@@ -11,10 +12,47 @@ from .serializers import (
     LocationSerializer,
     RiskPredictionSerializer,
     SensorMeasurementSerializer,
+    TelemetrySerializer,
 )
 
 
 logger = logging.getLogger(__name__)
+
+
+@api_view(["GET"])
+def get_active_locations(request: Request) -> Response:
+    """Return active monitoring locations for the map."""
+    try:
+        locations = Location.objects.filter(is_active=True).order_by("name")
+        return Response(LocationSerializer(locations, many=True).data)
+    except Exception:
+        logger.exception("Unable to retrieve active monitoring locations.")
+        return Response(
+            {"detail": "Unable to retrieve monitoring locations."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["GET"])
+def get_location_telemetry(request: Request, location_id: int) -> Response:
+    """Return the 50 most recent telemetry readings for one location."""
+    try:
+        location = Location.objects.get(pk=location_id)
+        measurements = SensorMeasurement.objects.filter(location=location).order_by(
+            "-timestamp"
+        )[:50]
+        return Response(TelemetrySerializer(measurements, many=True).data)
+    except Location.DoesNotExist:
+        return Response(
+            {"detail": "Location was not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception:
+        logger.exception("Unable to retrieve telemetry for location_id=%s.", location_id)
+        return Response(
+            {"detail": "Unable to retrieve location telemetry."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 class LocationListView(APIView):
     """GET /api/locations - List all monitored stations."""

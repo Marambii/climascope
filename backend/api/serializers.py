@@ -2,14 +2,41 @@ from rest_framework import serializers
 from .models import Alert, Anomaly, Location, RecommendedAction, RiskPrediction, SensorMeasurement
 
 class LocationSerializer(serializers.ModelSerializer):
+    """Map-ready location data with the most recent environmental status."""
+
+    status = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Location
-        fields = '__all__'
+        fields = ("id", "name", "latitude", "longitude", "is_active", "status")
+        read_only_fields = fields
 
-class SensorMeasurementSerializer(serializers.ModelSerializer):
+    def get_status(self, instance: Location) -> str:
+        """Return the latest risk severity, or NORMAL before a risk run exists."""
+        prediction = instance.riskprediction_set.order_by("-timestamp").first()
+        return prediction.severity if prediction is not None else "NORMAL"
+
+
+class TelemetrySerializer(serializers.ModelSerializer):
+    """Chart-ready representation of a Conduit sensor measurement."""
+
     class Meta:
         model = SensorMeasurement
-        fields = '__all__'
+        fields = (
+            "id",
+            "timestamp",
+            "temperature",
+            "humidity",
+            "soil_moisture",
+            "rainfall",
+            "pressure",
+            "wind_speed",
+        )
+        read_only_fields = fields
+
+
+class SensorMeasurementSerializer(TelemetrySerializer):
+    """Backward-compatible name for the telemetry serializer."""
 
 class AlertSerializer(serializers.ModelSerializer):
     class Meta:

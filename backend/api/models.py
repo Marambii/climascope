@@ -7,6 +7,7 @@ class Location(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
     region = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -20,6 +21,8 @@ class SensorMeasurement(models.Model):
     rainfall = models.FloatField(null=True, blank=True)
     soil_moisture = models.FloatField(null=True, blank=True)
     humidity = models.FloatField(null=True, blank=True)
+    pressure = models.FloatField(null=True, blank=True)
+    wind_speed = models.FloatField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

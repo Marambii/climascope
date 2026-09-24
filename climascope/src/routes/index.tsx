@@ -1,14 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import dummyData from '../data/dummyData.json';
 import { MetricCharts } from '../components/MetricCharts'; 
 import { Leaf, ArrowUpRight, ShieldAlert, Activity, CalendarCheck, CheckCircle2 } from 'lucide-react';
+import { getRecommendedAction, useClimaScopeData } from '../hooks/useClimaScopeData';
 
 export const Route = createFileRoute('/')({
   component: Dashboard,
 });
 
 function Dashboard() {
-  const data = dummyData;
+  const { data, error, loading } = useClimaScopeData();
 
   // Modern, high-contrast severity styles matching the premium emerald/teal aesthetic
   const getSeverityStyle = (severity: string) => {
@@ -21,7 +21,19 @@ function Dashboard() {
     }
   };
 
-  const currentSeverityStyle = getSeverityStyle(data.severity);
+  if (loading) {
+    return <div className="text-sm font-medium text-slate-500">Loading live environmental data…</div>;
+  }
+
+  if (error || data === null) {
+    return <div className="text-sm font-medium text-red-600">{error ?? 'Live environmental data is unavailable.'}</div>;
+  }
+
+  const { locations, risk, telemetry } = data;
+  const location = locations.find((item) => item.id === risk.location_id);
+  const stationName = location?.name ?? `Location ${risk.location_id}`;
+  const recommendedAction = getRecommendedAction(risk);
+  const currentSeverityStyle = getSeverityStyle(risk.severity);
 
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto animate-fade-in font-sans pb-12">
@@ -32,12 +44,12 @@ function Dashboard() {
           <div className="flex items-center gap-2 mb-2">
             <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-1 rounded-full border border-teal-100 uppercase tracking-wider flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
-              Node ID: {data.location_id}
+              Node ID: {risk.location_id}
             </span>
           </div>
           <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
             <Leaf className="w-8 h-8 text-teal-600" />
-            {data.station_name}
+            {stationName}
           </h2>
           <p className="text-slate-500 mt-1 text-sm font-medium">
             Predictive Environmental Intelligence & Early Warning System[cite: 1, 3]
@@ -49,7 +61,7 @@ function Dashboard() {
             <span className="text-lg leading-none">+</span> Log Inspection
           </button>
           <button className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2.5 px-6 rounded-full transition-colors text-sm shadow-sm text-slate-600">
-            Updated: {new Date(data.last_updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            Updated: {new Date(risk.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </button>
         </div>
       </header>
@@ -63,7 +75,7 @@ function Dashboard() {
             <ArrowUpRight className="w-4 h-4 text-white" />
           </div>
           <span className="text-xs font-semibold uppercase tracking-wider opacity-80 mb-3">Environmental Status</span>
-          <div className="text-4xl font-black tracking-tight mb-3">{data.severity}</div>
+          <div className="text-4xl font-black tracking-tight mb-3">{risk.severity}</div>
           <div className="mt-auto inline-flex items-center gap-1.5 bg-white/20 w-fit px-3 py-1 rounded-full text-xs font-medium backdrop-blur-md">
             Live Conduit Feed[cite: 1]
           </div>
@@ -76,10 +88,10 @@ function Dashboard() {
           </div>
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Risk Probability</span>
           <div className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-            {(data.risk_probability * 100).toFixed(0)}%
+            {(risk.risk_probability * 100).toFixed(0)}%
           </div>
           <div className="mt-auto text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full w-fit capitalize border border-teal-100">
-            {data.risk_type} Stress Risk[cite: 1]
+            {risk.risk_type} Stress Risk[cite: 1]
           </div>
         </div>
 
@@ -90,7 +102,7 @@ function Dashboard() {
           </div>
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Forecast Window</span>
           <div className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-            {data.forecast_window_days} <span className="text-lg font-normal text-slate-400">Days</span>
+            {risk.forecast_window_days} <span className="text-lg font-normal text-slate-400">Days</span>
           </div>
           <div className="mt-auto text-xs font-medium text-slate-500">
             Predicted horizon trajectory[cite: 1]
@@ -104,7 +116,7 @@ function Dashboard() {
           </div>
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Model Confidence</span>
           <div className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-            {(data.confidence * 100).toFixed(0)}%
+            {(risk.confidence * 100).toFixed(0)}%
           </div>
           <div className="mt-auto text-xs font-medium text-slate-500">
             Statistical fingerprint certainty[cite: 1]
@@ -128,7 +140,7 @@ function Dashboard() {
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Key Environmental Drivers</h4>
                 <ul className="space-y-2.5">
-                  {data.drivers.map((driver, idx) => (
+                  {risk.drivers.map((driver, idx) => (
                     <li key={idx} className="flex items-center gap-2 text-slate-700 font-medium text-sm">
                       <span className="w-2 h-2 rounded-full bg-teal-600"></span>
                       {driver}
@@ -140,7 +152,7 @@ function Dashboard() {
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Detected Anomalies</h4>
                 <ul className="space-y-3">
-                  {data.anomalies.map((anomaly, idx) => (
+                  {risk.anomalies.map((anomaly, idx) => (
                     <li key={idx} className="text-sm flex flex-col gap-0.5">
                       <span className="font-bold text-slate-800 capitalize flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
@@ -165,14 +177,14 @@ function Dashboard() {
               <span className="text-xs font-semibold text-teal-300 uppercase tracking-wider">Recommended Action[cite: 1]</span>
             </div>
             <h4 className="text-2xl font-bold text-white leading-snug mb-3">
-              {data.recommended_action}
+              {recommendedAction}
             </h4>
             <p className="text-xs text-teal-200/80 font-medium">
               Triggered automatically by the decision engine based on current telemetry[cite: 1].
             </p>
           </div>
 
-          <button className="mt-6 bg-white hover:bg-teal-50 text-teal-950 font-bold py-3.5 px-6 rounded-full transition-colors w-full flex justify-center items-center gap-2 shadow-sm text-sm">
+          <button onClick={() => alert('Field inspection workflow sequence initiated successfully.')} className="mt-6 bg-white hover:bg-teal-50 text-teal-950 font-bold py-3.5 px-6 rounded-full transition-colors w-full flex justify-center items-center gap-2 shadow-sm text-sm">
             <span>Execute Field Inspection</span>
             <ArrowUpRight className="w-4 h-4" />
           </button>
@@ -184,7 +196,7 @@ function Dashboard() {
       <div className="p-7 rounded-3xl border border-slate-100 bg-white shadow-sm w-full">
         <h3 className="text-xl font-bold text-slate-900 mb-2">Environmental Trajectory & Trends</h3>
         <p className="text-sm text-slate-500 mb-6">Visualizing sensor shifts across recent 16-minute interval telemetry feeds[cite: 1].</p>
-        <MetricCharts />
+        <MetricCharts telemetry={telemetry} />
       </div>
     
     </div>

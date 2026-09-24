@@ -1,28 +1,57 @@
 import { createFileRoute } from '@tanstack/react-router';
-import dummyData from '../data/dummyData.json';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, ShieldAlert, BookmarkPlus, BookmarkCheck, ArrowUpRight, Filter } from 'lucide-react';
+import { getRecommendedAction, useClimaScopeData } from '../hooks/useClimaScopeData';
+import type { ApiAnomaly } from '../types/api';
+
+type ActiveAnomaly = Omit<ApiAnomaly, 'timestamp'> & {
+  timestamp: string;
+  read: boolean;
+};
 
 export const Route = createFileRoute('/alerts')({
   component: AlertsPage,
 });
 
+function normalizeSeverity(severity: string): string {
+  switch (severity) {
+    case 'CRITICAL':
+    case 'HIGH':
+      return 'CRITICAL';
+    case 'WARNING':
+    case 'MEDIUM':
+      return 'WARNING';
+    case 'WATCH':
+    case 'LOW':
+      return 'WATCH';
+    default:
+      return 'NORMAL';
+  }
+}
+
 function AlertsPage() {
+  const { data, error, loading } = useClimaScopeData();
   // Local state for watchlist and active filter/read states to make the UI reactive
   const [isOnWatchlist, setIsOnWatchlist] = useState(false);
   const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'WARNING' | 'WATCH'>('ALL');
-  
-  // Extend dummyData anomalies to include stateful read/unread tracking
-  const [anomalies, setAnomalies] = useState(
-    dummyData.anomalies.map((anomaly, idx) => ({
-      id: `anomaly-${idx}`,
-      ...anomaly,
-      read: idx % 2 === 0, // Alternate read status for demo realism
-      timestamp: dummyData.last_updated
-    }))
-  );
 
-  const toggleRead = (id: string) => {
+  const [anomalies, setAnomalies] = useState<ActiveAnomaly[]>([]);
+
+  useEffect(() => {
+    if (data === null) {
+      return;
+    }
+
+    setAnomalies(data.risk.anomalies.map((anomaly, index) => ({
+      ...anomaly,
+      id: anomaly.id ?? index,
+      severity: normalizeSeverity(anomaly.severity),
+      read: false,
+      timestamp: anomaly.timestamp ?? data.risk.timestamp,
+    })));
+  }, [data]);
+
+  const toggleRead = (id: number) => {
     setAnomalies(prev => 
       prev.map(item => item.id === id ? { ...item, read: !item.read } : item)
     );
@@ -32,6 +61,18 @@ function AlertsPage() {
     if (filter === 'ALL') return true;
     return item.severity === filter;
   });
+
+  if (loading) {
+    return <div className="text-sm font-medium text-slate-500">Loading live alerts…</div>;
+  }
+
+  if (error || data === null) {
+    return <div className="text-sm font-medium text-red-600">{error ?? 'Live alerts are unavailable.'}</div>;
+  }
+
+  const { risk, locations } = data;
+  const stationName = locations.find((location) => location.id === risk.location_id)?.name ?? `Location ${risk.location_id}`;
+  const recommendedAction = getRecommendedAction(risk);
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -138,7 +179,7 @@ function AlertsPage() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="text-base font-bold text-slate-900 leading-tight">
-                            {dummyData.station_name}
+                            {stationName}
                           </h4>
                           {!item.read && (
                             <span className="w-2 h-2 rounded-full bg-teal-500" title="Unread Notice"></span>
@@ -161,7 +202,7 @@ function AlertsPage() {
                         {item.read ? 'Mark Unread' : 'Mark Read'}
                       </button>
                       <button 
-                        onClick={() => alert(`Opening deep-dive investigation panel for node ${dummyData.location_id}`)}
+                        onClick={() => alert(`Opening deep-dive investigation panel for node ${risk.location_id}`)}
                         className="bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-5 rounded-full transition-colors text-xs shadow-sm flex items-center gap-1.5"
                       >
                         View Evidence <ArrowUpRight className="w-3.5 h-3.5" />
@@ -179,7 +220,7 @@ function AlertsPage() {
             
             <div className="relative z-10">
               <span className="text-xs font-semibold text-teal-300 mb-1 uppercase tracking-wider block">Decision Engine Directive</span>
-              <p className="text-xl font-bold tracking-tight text-white">{dummyData.recommended_action}</p>
+              <p className="text-xl font-bold tracking-tight text-white">{recommendedAction}</p>
             </div>
             
             <button 
@@ -208,28 +249,28 @@ function AlertsPage() {
               <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 shadow-sm flex flex-col gap-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold text-slate-900 text-base">{dummyData.station_name}</h4>
-                    <span className="text-xs text-slate-400 font-medium">Location ID: {dummyData.location_id}</span>
+                    <h4 className="font-bold text-slate-900 text-base">{stationName}</h4>
+                    <span className="text-xs text-slate-400 font-medium">Location ID: {risk.location_id}</span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${getSeverityBadge(dummyData.severity)}`}>
-                    {dummyData.severity}
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border ${getSeverityBadge(risk.severity)}`}>
+                    {risk.severity}
                   </span>
                 </div>
                 
                 <div className="space-y-2.5 text-sm text-slate-600 bg-white p-4 rounded-xl border border-slate-100/80">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium text-xs">Risk Profile</span>
-                    <span className="font-bold text-slate-800 capitalize text-xs">{dummyData.risk_type}</span>
+                    <span className="font-bold text-slate-800 capitalize text-xs">{risk.risk_type}</span>
                   </div>
                   <div className="w-full h-px bg-slate-100"></div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium text-xs">Probability</span>
-                    <span className="font-bold text-slate-800 text-xs">{(dummyData.risk_probability * 100).toFixed(0)}%</span>
+                    <span className="font-bold text-slate-800 text-xs">{(risk.risk_probability * 100).toFixed(0)}%</span>
                   </div>
                   <div className="w-full h-px bg-slate-100"></div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium text-xs">Forecast Window</span>
-                    <span className="font-bold text-slate-800 text-xs">{dummyData.forecast_window_days} Days</span>
+                    <span className="font-bold text-slate-800 text-xs">{risk.forecast_window_days} Days</span>
                   </div>
                 </div>
               </div>

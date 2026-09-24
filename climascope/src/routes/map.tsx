@@ -1,12 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { EnvironmentalMap } from '../components/EnvironmentaalMap';
 import { MapPin, SlidersHorizontal, Plus } from 'lucide-react';
+import { useClimaScopeData } from '../hooks/useClimaScopeData';
 
 export const Route = createFileRoute('/map')({
   component: MapPage,
 });
 
 function MapPage() {
+  const { data } = useClimaScopeData();
+  const activeLocationCount = data?.locations.filter((location) => location.is_active).length ?? 0;
+
   return (
     <div className="max-w-7xl mx-auto flex flex-col gap-6 animate-fade-in font-sans">
       
@@ -38,7 +42,7 @@ function MapPage() {
             <h3 className="text-xl font-bold text-slate-900">Station Network Status</h3>
             <span className="bg-teal-50 text-teal-700 text-xs font-bold px-3 py-1 rounded-full border border-teal-100 uppercase flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
-              1 Active Node
+              {activeLocationCount} Active {activeLocationCount === 1 ? 'Node' : 'Nodes'}
             </span>
         </div>
         
