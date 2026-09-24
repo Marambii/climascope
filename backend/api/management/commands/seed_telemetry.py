@@ -35,10 +35,23 @@ class Command(BaseCommand):
         if not isinstance(location_id, int) or location_id <= 0:
             raise CommandError("--location-id must be a positive integer.")
 
-        try:
-            location = Location.objects.get(pk=location_id)
-        except Location.DoesNotExist as exc:
-            raise CommandError(f"Location with ID {location_id} does not exist.") from exc
+        location, created = Location.objects.get_or_create(
+            pk=location_id,
+            defaults={
+                "name": "Juja Main Sensor",
+                "station_id": f"JUJA-MAIN-SENSOR-{location_id}",
+                "latitude": -1.1018,
+                "longitude": 37.0144,
+                "region": "Juja",
+                "is_active": True,
+            },
+        )
+        if created:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Created default location: {location.name} (ID {location.pk})."
+                )
+            )
 
         deleted_count, _ = SensorMeasurement.objects.filter(location=location).delete()
         start_time = timezone.now() - timedelta(
