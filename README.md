@@ -628,35 +628,11 @@ The project direction, hazard selection, system requirements, data interpretatio
 ## 13. Screenshots / Demo
 
 The application is designed around an intelligence-first dashboard rather than a generic weather dashboard.
-
-Recommended demo flow:
-
-```text
-Dashboard
-   ↓
-Select a location
-   ↓
-Current environmental state
-   ↓
-Historical vs expected conditions
-   ↓
-Detected anomaly
-   ↓
-Predicted drought risk
-   ↓
-Why is the risk increasing?
-   ↓
-Recommended action
-```
-
-For the final submission, screenshots/GIFs of the following views should be added to this section:
-
-1. Main risk dashboard
-2. Location details
-3. Environmental trend graph
-4. Risk trajectory
-5. Explanation/drivers
-6. Action Centre
+<img width="1600" height="815" alt="climascope1" src="https://github.com/user-attachments/assets/b23d542c-3c02-4e65-8ef1-ee7079c7ab7d" />
+<img width="1600" height="863" alt="climascope2" src="https://github.com/user-attachments/assets/7ba2da8e-4733-42a7-bf12-732fd45d9101" />
+<img width="1600" height="810" alt="climascope3" src="https://github.com/user-attachments/assets/5554e397-ef2b-414d-a879-d1368d363556" />
+<img width="1600" height="869" alt="climascope4" src="https://github.com/user-attachments/assets/65cbe65e-777a-4613-90ff-0745dd90c110" />
+<img width="1600" height="810" alt="climascope5" src="https://github.com/user-attachments/assets/57304c94-b40a-4d18-ad6c-629582f11a1c" />
 
 ### Demo
 
