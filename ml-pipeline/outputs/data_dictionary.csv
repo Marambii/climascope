@@ -1,0 +1,18 @@
+,unit,dtype,missing_pct,mean,min,max,description
+rain1,mm/interval,float64,0.0,0.002,0.0,2.0,Tipping-bucket rain gauge 1
+rain2,mm/interval,float64,0.0,0.0,0.0,0.4,Tipping-bucket rain gauge 2
+temp_sht,degC,float64,0.0,20.362,9.8,34.2,Air temperature (primary)
+temp_bmx,degC,float64,0.0,19.933,9.2,32.9,
+temp_mcp,degC,float64,0.0,20.146,9.6,33.0,
+humidity_sht,%,float64,0.0,69.913,21.7,98.3,Relative humidity
+press_bmx,hPa,float64,0.0,850.672,842.9,856.5,Barometric pressure
+light_vis,counts,int64,0.0,406.389,257.0,1365.0,Ambient light (cloud/sun proxy)
+light_ir,counts,int64,0.0,1826.629,251.0,11939.0,
+uv,index,float64,0.0,0.17,0.0,5.1,
+wind_spd,m/s,float64,0.0,0.375,0.0,4.2,Wind speed
+wind_dir,deg,int64,0.0,128.613,0.0,359.0,
+wind_gust,m/s,float64,0.0,0.971,0.0,15.7,Wind gust
+wind_gust_dir,,float64,0.0,0.971,0.0,15.7,
+heat_idx,degC,float64,0.0,20.304,9.5,32.4,
+wet_bulb_temp,degC,float64,0.0,16.341,8.6,22.2,
+wet_bulb_globe_temp,degC,float64,0.0,15.643,4.9,25.0,

@@ -41,6 +41,7 @@ Thumbs.db
 *.log
 
 CODE_EXPLAINED.md
+TEAM_ROLES.md
 
 # Database
 *.sqlite3
