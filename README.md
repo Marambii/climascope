@@ -640,7 +640,8 @@ The application is designed around an intelligence-first dashboard rather than a
 https://github.com/Marambii/climascope
 
 **Project demonstration:**  
-_Add the final demo/video link here._
+[Watch the project demo](https://youtu.be/XrfSPJe6QDE)
+
 
 ---
 
